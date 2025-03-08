@@ -1,0 +1,57 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { marked } from "marked";
+import { octokit } from "../libs/octokit";
+
+export async function getStaticPaths() {
+  // ファイルのコンテンツを取得
+  const { data } = await octokit.rest.repos.getContent({
+    owner: import.meta.env.REPO_OWNER,
+    repo: import.meta.env.REPO_NAME,
+    path: "",
+  });
+
+  if (!Array.isArray(data)) {
+    throw new Error("Error fetching files");
+  }
+
+  const params = data.map((file) => {
+    if (!file.download_url) {
+      throw new Error("Error notfound download_url: " + file.name);
+    }
+
+    return {
+      params: {
+        slug: file.name.replace(".md", ""),
+        downloadURL: file.download_url,
+      },
+    };
+  });
+
+  return params;
+}
+
+const { slug } = Astro.params;
+
+// コンテンツのURLを取得
+const { data } = await octokit.rest.repos.getContent({
+  owner: import.meta.env.REPO_OWNER,
+  repo: import.meta.env.REPO_NAME,
+  path: slug + ".md",
+});
+
+if (Array.isArray(data)) {
+  throw new Error("Error");
+}
+
+// コンテンツ取得
+const html = await fetch(data.download_url!).then(
+  async (res) => await res.text()
+);
+
+const content = marked.parse(html);
+---
+
+<Layout title={"利用規約"}>
+  <article set:html={content} class="prose max-w-2xl mx-auto mt-8" />
+</Layout>
