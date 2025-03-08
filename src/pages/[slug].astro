@@ -15,20 +15,20 @@ export async function getStaticPaths() {
     throw new Error("Error fetching files");
   }
 
-  const params = data.map((file) => {
-    if (!file.download_url) {
-      throw new Error("Error notfound download_url: " + file.name);
-    }
+  return data
+    .filter((file) => file.name !== "README.md")
+    .map((file) => {
+      if (!file.download_url) {
+        throw new Error("Error notfound download_url: " + file.name);
+      }
 
-    return {
-      params: {
-        slug: file.name.replace(".md", ""),
-        downloadURL: file.download_url,
-      },
-    };
-  });
-
-  return params;
+      return {
+        params: {
+          slug: file.name.replace(".md", ""),
+          downloadURL: file.download_url,
+        },
+      };
+    });
 }
 
 const { slug } = Astro.params;
